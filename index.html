@@ -19,6 +19,7 @@
             --modal-overlay: rgba(0,0,0,0.8);
             --shadow: 0 2px 4px rgba(0,0,0,0.2);
             --notes-bg: #252525;
+            --drop-zone: rgba(255, 255, 255, 0.05);
         }
 
         [data-theme="light"] {
@@ -33,6 +34,7 @@
             --modal-overlay: rgba(0,0,0,0.4);
             --shadow: 0 2px 8px rgba(0,0,0,0.05);
             --notes-bg: #fafafa;
+            --drop-zone: rgba(0, 0, 0, 0.05);
         }
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: background 0.3s, color 0.3s; }
@@ -51,10 +53,23 @@
         .btn-text:hover { opacity: 1; background: transparent; }
         .btn-icon { padding: 8px; width: 36px; }
 
-        /* The List */
-        .layer-list { list-style: none; padding: 0; min-height: 50px; }
-        .layer-list .layer-list { padding-left: 25px; border-left: 1px solid var(--border); margin-top: 5px; margin-bottom: 5px; }
+        /* The List Structure */
+        .layer-list { list-style: none; padding: 0; /* min-height removed to save space */ }
         
+        /* Root list needs some height so you can drop items into an empty project */
+        #rootList { min-height: 150px; padding-bottom: 50px; }
+
+        .layer-list .layer-list { padding-left: 25px; border-left: 1px solid var(--border); margin-top: 0; margin-bottom: 0; transition: min-height 0.2s, margin 0.2s; }
+        
+        /* DRAG MODE: Expand empty lists so they act as Drop Zones */
+        body.dragging-mode .layer-list {
+            min-height: 30px; 
+            margin-top: 5px;
+            margin-bottom: 5px;
+            background: var(--drop-zone);
+            border-radius: 4px;
+        }
+
         /* The Item Container */
         .li-wrapper { margin-bottom: 5px; }
 
@@ -77,7 +92,7 @@
         .toggle-btn, .calendar-btn { cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 4px; color: var(--text); opacity: 0.5; user-select: none; transition: 0.2s; }
         .toggle-btn:hover, .calendar-btn:hover { background: var(--hover); opacity: 1; }
         
-        .calendar-btn { font-size: 1.1rem; } /* Make emoji slightly larger */
+        .calendar-btn { font-size: 1.1rem; }
 
         .delete-btn { cursor: pointer; color: #ff5f56; opacity: 0; padding: 4px 8px; border-radius: 4px; transition: 0.2s; font-size: 0.9rem; margin-left: 5px; }
         .layer-item:hover .delete-btn { opacity: 1; }
@@ -222,8 +237,15 @@
             animation: 150,
             fallbackOnBody: true,
             swapThreshold: 0.65,
-            handle: '.layer-content', // Only drag by holding the text/icon area, not buttons
-            onEnd: function () { saveCurrentState(); }
+            handle: '.layer-content', 
+            // Add 'dragging-mode' class to body while dragging
+            onStart: function() {
+                document.body.classList.add('dragging-mode');
+            },
+            onEnd: function () { 
+                document.body.classList.remove('dragging-mode');
+                saveCurrentState(); 
+            }
         });
     }
 
@@ -231,7 +253,6 @@
         const li = document.createElement('li');
         li.className = "li-wrapper";
         
-        // Escape quotes for HTML attribute
         const safeNotes = notes ? notes.replace(/"/g, '&quot;') : "";
 
         li.innerHTML = `
@@ -263,7 +284,6 @@
 
     function rebuildList(container, items) {
         items.forEach(item => {
-            // Handle legacy data that might not have 'notes' field
             const notes = item.notes || "";
             const li = createLayerHTML(item.title, item.status, notes, item.children);
             container.appendChild(li);
@@ -294,7 +314,6 @@
         } else {
             panel.classList.add('open');
             btn.innerText = '-';
-            // Auto-focus text area if empty
             const textarea = panel.querySelector('textarea');
             if(textarea.value === "") textarea.focus();
         }
@@ -311,10 +330,8 @@
         }
 
         if(confirm(`Open Google Calendar to schedule "${title}"?`)) {
-            // Encode details for URL
             const text = encodeURIComponent(title);
             const details = encodeURIComponent(notes);
-            // Open Create Event page
             const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&details=${details}`;
             window.open(url, '_blank');
         }
