@@ -3,172 +3,399 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solo Ops Manual</title>
+    <title>SoloOps</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --bg: #1e1e1e; --text: #e0e0e0; --panel: #2d2d2d; --border: #444; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        /* CSS VARIABLES FOR THEMES */
+        :root {
+            /* Dark Theme (Default) */
+            --bg: #1e1e1e;
+            --text: #e0e0e0;
+            --panel: #2d2d2d;
+            --border: #444;
+            --accent: #2196f3;
+            --hover: #3a3a3a;
+            --input-text: #ffffff;
+            --modal-overlay: rgba(0,0,0,0.8);
+            --shadow: 0 2px 4px rgba(0,0,0,0.2);
+            --notes-bg: #252525;
+        }
+
+        [data-theme="light"] {
+            /* Light Theme */
+            --bg: #f4f6f8;
+            --text: #333333;
+            --panel: #ffffff;
+            --border: #e0e0e0;
+            --accent: #007bff;
+            --hover: #f1f1f1;
+            --input-text: #333333;
+            --modal-overlay: rgba(0,0,0,0.4);
+            --shadow: 0 2px 8px rgba(0,0,0,0.05);
+            --notes-bg: #fafafa;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: background 0.3s, color 0.3s; }
         
         /* Layout */
-        .container { max-width: 800px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn { cursor: pointer; background: #444; border: none; color: white; padding: 8px 16px; border-radius: 4px; }
-        .btn:hover { background: #555; }
+        .container { max-width: 800px; margin: 0 auto; padding-bottom: 50px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        .project-title { margin: 0; font-size: 1.5rem; font-weight: 700; }
         
+        /* Buttons */
+        .btn { cursor: pointer; background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 4px; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        .btn:hover { background: var(--hover); }
+        .btn-primary { background: var(--accent); color: white; border: none; }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-text { background: transparent; border: none; color: var(--text); opacity: 0.7; }
+        .btn-text:hover { opacity: 1; background: transparent; }
+        .btn-icon { padding: 8px; width: 36px; }
+
         /* The List */
         .layer-list { list-style: none; padding: 0; min-height: 50px; }
-        .layer-list .layer-list { padding-left: 25px; border-left: 1px solid #555; margin-top: 5px; }
+        .layer-list .layer-list { padding-left: 25px; border-left: 1px solid var(--border); margin-top: 5px; margin-bottom: 5px; }
         
-        /* The Items (Photoshop Layer Style) */
-        .layer-item { background: var(--panel); margin-bottom: 5px; border: 1px solid var(--border); border-radius: 4px; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
-        .layer-content { display: flex; align-items: center; flex-grow: 1; gap: 10px; cursor: grab; }
-        .layer-title { font-weight: 500; outline: none; border: none; background: transparent; color: white; width: 100%; }
-        
-        /* Status Indicators */
-        .status-dot { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 2px solid #555; flex-shrink: 0; }
-        .status-red { background-color: #ff5f56; box-shadow: 0 0 5px #ff5f56; }      /* Not Started */
-        .status-blue { background-color: #2196f3; box-shadow: 0 0 5px #2196f3; }     /* In Progress */
-        .status-yellow { background-color: #ffeb3b; box-shadow: 0 0 5px #ffeb3b; }   /* Blocked */
-        .status-green { background-color: #4caf50; box-shadow: 0 0 5px #4caf50; }    /* Done */
+        /* The Item Container */
+        .li-wrapper { margin-bottom: 5px; }
 
-        /* Controls */
-        .actions { opacity: 0.3; transition: 0.2s; }
-        .layer-item:hover .actions { opacity: 1; }
-        .delete-btn { color: #ff5f56; cursor: pointer; margin-left: 10px; }
+        /* The Layer Header (Task Bar) */
+        .layer-item { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow); transition: background 0.3s, border 0.3s; position: relative; }
+        .layer-content { display: flex; align-items: center; flex-grow: 1; gap: 12px; cursor: grab; }
+        .layer-input { font-weight: 500; outline: none; border: none; background: transparent; color: var(--input-text); width: 100%; font-size: 1rem; font-family: inherit; }
+        
+        /* Right Side Controls */
+        .layer-controls { display: flex; align-items: center; gap: 5px; }
+
+        /* Status Dots */
+        .status-dot { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 2px solid var(--border); flex-shrink: 0; transition: 0.2s; }
+        .status-red { background-color: #ff5f56; box-shadow: 0 0 5px #ff5f56; border-color: transparent; }
+        .status-blue { background-color: #2196f3; box-shadow: 0 0 5px #2196f3; border-color: transparent; }
+        .status-yellow { background-color: #ffeb3b; box-shadow: 0 0 5px #ffeb3b; border-color: transparent; }
+        .status-green { background-color: #4caf50; box-shadow: 0 0 5px #4caf50; opacity: 0.5; border-color: transparent; } 
+
+        /* Toggle & Delete Buttons */
+        .toggle-btn { cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 4px; color: var(--text); opacity: 0.6; user-select: none; }
+        .toggle-btn:hover { background: var(--hover); opacity: 1; }
+        
+        .delete-btn { cursor: pointer; color: #ff5f56; opacity: 0; padding: 4px 8px; border-radius: 4px; transition: 0.2s; font-size: 0.9rem; }
+        .layer-item:hover .delete-btn { opacity: 1; }
+        .delete-btn:hover { background: rgba(255, 95, 86, 0.1); }
+
+        /* Accordion Notes Panel */
+        .notes-panel { display: none; padding: 0 10px 10px 40px; }
+        .notes-panel.open { display: block; animation: slideDown 0.2s ease-out; }
+        
+        .notes-area {
+            width: 100%;
+            background: var(--notes-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            color: var(--text);
+            padding: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+            border-radius: 0 0 6px 6px;
+            box-sizing: border-box;
+            outline: none;
+            display: block;
+            margin-top: -4px; /* Connect to top bar */
+            border-top: 1px dashed var(--border);
+        }
+        .notes-area::placeholder { color: var(--text); opacity: 0.4; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-overlay); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        .modal { background: var(--panel); width: 500px; max-width: 90%; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); color: var(--text); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .file-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+        .file-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border); align-items: center; border-radius: 4px; }
+        .file-item:hover { background: var(--hover); }
+        .file-name { cursor: pointer; flex-grow: 1; font-weight: 500; }
+        .section-title { color: var(--accent); text-transform: uppercase; font-size: 0.75rem; margin-top: 20px; margin-bottom: 10px; letter-spacing: 1px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h2>🚀 Product Launch Ops</h2>
-        <div>
-            <button class="btn" onclick="addItem()">+ New Task</button>
-            <button class="btn" onclick="saveData()">Save Manual</button>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <button class="btn" onclick="openFileManager()">📂 Files</button>
+            <h2 id="currentProjectTitle" class="project-title">Loading...</h2>
+        </div>
+        <div style="display:flex; gap: 10px;">
+            <button class="btn btn-icon" id="themeToggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">☀️</button>
+            <button class="btn btn-text" onclick="saveAsTemplate()">Save Template</button>
+            <button class="btn btn-primary" onclick="addItem()">+ Task</button>
         </div>
     </div>
-    <ul id="rootList" class="layer-list">
-        </ul>
+    <ul id="rootList" class="layer-list"></ul>
+</div>
+
+<!-- FILE MANAGER -->
+<div id="fileManager" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 style="margin:0">My Manuals</h3>
+            <button class="btn btn-text" onclick="closeFileManager()">Close</button>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="createNewProject()">+ New Project</button>
+        <div class="section-title">Active Projects</div>
+        <ul id="projectList" class="file-list"></ul>
+        <div class="section-title">Templates</div>
+        <ul id="templateList" class="file-list"></ul>
+    </div>
 </div>
 
 <script>
+    let appData = { currentId: null, projects: {}, templates: {} };
     const root = document.getElementById('rootList');
 
-    // 1. Initialize SortableJS for Drag and Drop
+    function init() {
+        const stored = localStorage.getItem('soloOps_library');
+        if (stored) appData = JSON.parse(stored);
+        else {
+            const defaultId = Date.now().toString();
+            appData.projects[defaultId] = { name: "My First Manual", data: [{ title: "Welcome", status: "blue", notes: "Click the + to read notes.", children: [] }] };
+            appData.currentId = defaultId;
+            saveLibrary();
+        }
+        
+        if (!appData.currentId || !appData.projects[appData.currentId]) {
+            const keys = Object.keys(appData.projects);
+            if(keys.length > 0) appData.currentId = keys[0];
+        }
+
+        const storedTheme = localStorage.getItem('soloOps_theme');
+        if (storedTheme) {
+            document.documentElement.setAttribute('data-theme', storedTheme);
+            updateThemeIcon(storedTheme);
+        }
+
+        loadCurrentProject();
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const newTheme = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('soloOps_theme', newTheme);
+        updateThemeIcon(newTheme);
+    }
+
+    function updateThemeIcon(theme) {
+        document.getElementById('themeToggle').innerText = theme === 'light' ? '🌙' : '☀️';
+    }
+
+    function loadCurrentProject() {
+        const project = appData.projects[appData.currentId];
+        if(!project) return;
+        document.getElementById('currentProjectTitle').innerText = project.name;
+        root.innerHTML = ''; 
+        rebuildList(root, project.data); 
+        initSortable(root);
+    }
+
+    function saveCurrentState() {
+        if (!appData.currentId) return;
+        appData.projects[appData.currentId].data = serializeList(root);
+        saveLibrary();
+    }
+
+    function saveLibrary() {
+        localStorage.setItem('soloOps_library', JSON.stringify(appData));
+    }
+
+    // --- DRAG & DROP & DOM ---
+    
     function initSortable(el) {
         new Sortable(el, {
-            group: 'nested', // Allows dragging between lists
+            group: 'nested',
             animation: 150,
             fallbackOnBody: true,
             swapThreshold: 0.65,
-            onEnd: function (evt) {
-                // If dragged slightly right, nest it under the item above
-                // Note: Full auto-nesting logic is complex, this is a simplified visual stack
-                saveData(); 
-            }
+            handle: '.layer-content', // Only drag by holding the text/icon area, not buttons
+            onEnd: function () { saveCurrentState(); }
         });
     }
 
-    // 2. Create a Layer Item
-    function createLayerHTML(text = "New Task", status = "red", children = []) {
+    function createLayerHTML(text, status, notes = "", children = []) {
         const li = document.createElement('li');
+        li.className = "li-wrapper";
         
-        // Define status colors
-        const colors = ['red', 'blue', 'yellow', 'green'];
-        
+        // Escape quotes for HTML attribute
+        const safeNotes = notes ? notes.replace(/"/g, '&quot;') : "";
+
         li.innerHTML = `
             <div class="layer-item">
                 <div class="layer-content">
                     <div class="status-dot status-${status}" onclick="cycleStatus(this)"></div>
-                    <input class="layer-title" value="${text}" onchange="saveData()" placeholder="Task Name...">
+                    <input class="layer-input" value="${text}" onchange="saveCurrentState()" placeholder="Task Name...">
                 </div>
-                <div class="actions">
+                <div class="layer-controls">
+                    <span class="toggle-btn" onclick="toggleNotes(this)" title="Toggle Notes">+</span>
                     <span class="delete-btn" onclick="deleteItem(this)">✖</span>
                 </div>
             </div>
+            <div class="notes-panel">
+                <textarea class="notes-area" placeholder="Add details, instructions, or links here..." onchange="saveCurrentState()">${notes}</textarea>
+            </div>
             <ul class="layer-list"></ul>
         `;
+        
+        const subList = li.querySelector('.layer-list');
+        initSortable(subList);
 
-        // Initialize sortable for the sub-list immediately
-        initSortable(li.querySelector('.layer-list'));
+        if (children && children.length > 0) {
+            rebuildList(subList, children);
+        }
         return li;
     }
 
-    // 3. Add New Item
-    function addItem(targetList = root, text, status) {
-        const item = createLayerHTML(text, status);
-        targetList.appendChild(item);
-        saveData();
+    function rebuildList(container, items) {
+        items.forEach(item => {
+            // Handle legacy data that might not have 'notes' field
+            const notes = item.notes || "";
+            const li = createLayerHTML(item.title, item.status, notes, item.children);
+            container.appendChild(li);
+        });
     }
 
-    // 4. Cycle Status Colors (Red -> Blue -> Yellow -> Green)
+    function addItem() {
+        const li = createLayerHTML("", "red");
+        root.appendChild(li);
+        li.querySelector('input').focus();
+        saveCurrentState();
+    }
+
+    function deleteItem(btn) {
+        if(confirm('Delete this task?')) {
+            btn.closest('li').remove();
+            saveCurrentState();
+        }
+    }
+
+    function toggleNotes(btn) {
+        const wrapper = btn.closest('.li-wrapper');
+        const panel = wrapper.querySelector('.notes-panel');
+        
+        if (panel.classList.contains('open')) {
+            panel.classList.remove('open');
+            btn.innerText = '+';
+        } else {
+            panel.classList.add('open');
+            btn.innerText = '-';
+            // Auto-focus text area if empty
+            const textarea = panel.querySelector('textarea');
+            if(textarea.value === "") textarea.focus();
+        }
+    }
+
     function cycleStatus(dot) {
         const classes = ['status-red', 'status-blue', 'status-yellow', 'status-green'];
         let currentClass = classes.find(c => dot.classList.contains(c));
         let nextIndex = (classes.indexOf(currentClass) + 1) % classes.length;
-        
         dot.classList.remove(currentClass);
         dot.classList.add(classes[nextIndex]);
-        saveData();
-    }
-
-    // 5. Delete Item
-    function deleteItem(btn) {
-        if(confirm('Delete this task and its subtasks?')) {
-            btn.closest('li').remove();
-            saveData();
-        }
-    }
-
-    // 6. Save to LocalStorage
-    function saveData() {
-        const data = serializeList(root);
-        localStorage.setItem('opsManualData', JSON.stringify(data));
+        saveCurrentState();
     }
 
     function serializeList(list) {
         let items = [];
         list.querySelectorAll(':scope > li').forEach(li => {
-            let title = li.querySelector('.layer-title').value;
+            let title = li.querySelector('.layer-input').value;
+            let notes = li.querySelector('.notes-area').value;
             let dot = li.querySelector('.status-dot');
             let status = 'red';
+            
             if (dot.classList.contains('status-blue')) status = 'blue';
-            if (dot.classList.contains('status-yellow')) status = 'yellow';
-            if (dot.classList.contains('status-green')) status = 'green';
-
+            else if (dot.classList.contains('status-yellow')) status = 'yellow';
+            else if (dot.classList.contains('status-green')) status = 'green';
+            
             items.push({
                 title: title,
                 status: status,
+                notes: notes,
                 children: serializeList(li.querySelector('ul'))
             });
         });
         return items;
     }
 
-    // 7. Load Data on Startup
-    function loadData() {
-        const data = JSON.parse(localStorage.getItem('opsManualData'));
-        if (data) {
-            rebuildList(root, data);
-        } else {
-            // Default Template
-            addItem(root, "Product Launch v1.0", "blue"); 
-        }
-    }
+    // --- FILE MANAGER ---
+    function openFileManager() { document.getElementById('fileManager').style.display = 'flex'; renderFileList(); }
+    function closeFileManager() { document.getElementById('fileManager').style.display = 'none'; }
 
-    function rebuildList(container, items) {
-        items.forEach(item => {
-            const li = createLayerHTML(item.title, item.status);
-            container.appendChild(li);
-            if (item.children && item.children.length > 0) {
-                rebuildList(li.querySelector('ul'), item.children);
-            }
+    function renderFileList() {
+        const pList = document.getElementById('projectList');
+        const tList = document.getElementById('templateList');
+        pList.innerHTML = ''; tList.innerHTML = '';
+
+        Object.keys(appData.projects).forEach(id => {
+            const proj = appData.projects[id];
+            const isActive = (id === appData.currentId) ? '<span style="color:var(--accent)">●</span>' : '';
+            pList.innerHTML += `<li class="file-item" style="${isActive ? 'border-left: 3px solid var(--accent);' : ''}">
+                <span class="file-name" onclick="switchProject('${id}')">${isActive} ${proj.name}</span>
+                <span class="delete-btn" onclick="deleteProject('${id}')">🗑</span>
+            </li>`;
+        });
+
+        Object.keys(appData.templates).forEach(id => {
+            tList.innerHTML += `<li class="file-item">
+                <span class="file-name" onclick="createFromTemplate('${id}')">📋 New from: ${appData.templates[id].name}</span>
+                <span class="delete-btn" onclick="deleteTemplate('${id}')">🗑</span>
+            </li>`;
         });
     }
 
-    // Initialize
-    initSortable(root);
-    loadData();
+    function switchProject(id) { appData.currentId = id; saveLibrary(); loadCurrentProject(); closeFileManager(); }
+    
+    function createNewProject() {
+        const name = prompt("Project Name:");
+        if (!name) return;
+        const newId = Date.now().toString();
+        appData.projects[newId] = { name: name, data: [] };
+        switchProject(newId);
+    }
+
+    function saveAsTemplate() {
+        const name = prompt("Template Name:");
+        if (!name) return;
+        const newId = "tpl_" + Date.now();
+        appData.templates[newId] = { name: name, data: JSON.parse(JSON.stringify(appData.projects[appData.currentId].data)) };
+        saveLibrary();
+        alert("Template Saved!");
+    }
+
+    function createFromTemplate(id) {
+        const tpl = appData.templates[id];
+        const name = prompt(`Name for new project:`, tpl.name + " Copy");
+        if (!name) return;
+        const newId = Date.now().toString();
+        appData.projects[newId] = { name: name, data: JSON.parse(JSON.stringify(tpl.data)) };
+        switchProject(newId);
+    }
+
+    function deleteProject(id) {
+        if (Object.keys(appData.projects).length <= 1) return alert("Must keep one project.");
+        if(confirm("Delete project?")) {
+            delete appData.projects[id];
+            if(id === appData.currentId) appData.currentId = Object.keys(appData.projects)[0];
+            saveLibrary(); loadCurrentProject(); renderFileList();
+        }
+    }
+
+    function deleteTemplate(id) {
+        if(confirm("Delete template?")) { delete appData.templates[id]; saveLibrary(); renderFileList(); }
+    }
+
+    init();
 </script>
 </body>
 </html>
